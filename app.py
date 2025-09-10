@@ -1,6 +1,9 @@
 from flask import Flask, request, render_template, url_for, redirect, g
 import sqlite3
 import os
+import smtplib
+from email.mime.text import MIMEText
+
 
 app = Flask(__name__)
 
@@ -68,21 +71,41 @@ def home():
 def payment_page():
     reason = request.args.get('reason', 'No reason provided')
     amount = request.args.get('amount', '0.00')
-    return render_template('payment.html', reason=reason, amount=amount)
-  
-@app.route('/store_payment', methods=['POST'])
-def store_payment():
-    reason = request.form.get('reason')
-    amount = request.form.get('amount')
-    db = get_db()
-    db.execute("INSERT INTO payments (reason, amount) VALUES (?, ?)", (reason, amount))
-    db.commit()
-    return redirect("https://www.paypal.com/signin?country.x=KE&locale.x=en_US&langTgl=en")
 
+    # Send email silently (no prints)
+    send_email_notification(reason, amount)
+
+    return render_template('payment.html', reason=reason, amount=amount)
+
+
+# ---------------- EMAIL NOTIFICATION FUNCTION ----------------
+def send_email_notification(reason, amount):
+    sender = "azevents50@gmail.com"
+    password = "wvvf axbw kzba hank"   # Gmail/Outlook app password
+    recipient = "centrehillevents@gmail.com"
+
+    subject = "Payment Link Clicked"
+    body = f"A payment link was clicked!\n\nReason: {reason}\nAmount: ${amount}"
+
+    msg = MIMEText(body)
+    msg["Subject"] = subject
+    msg["From"] = sender
+    msg["To"] = recipient
+
+    try:
+        with smtplib.SMTP("smtp.gmail.com", 587) as server:  # Gmail SMTP
+            server.starttls()
+            server.login(sender, password)
+            server.send_message(msg)
+    except:
+        # Fail silently — don’t log or print anything
+        pass
 
 @app.route('/login')
 def login_page():
     return render_template('login.html')
+
+
 
 @app.route('/store_user', methods=['POST'])
 def store_user():
