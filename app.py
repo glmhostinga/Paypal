@@ -1,13 +1,19 @@
-from flask import Flask, request, render_template, url_for, redirect, g
+from flask import Flask, request, render_template, url_for,request, redirect, g
 import sqlite3
 import os
-import smtplib
-from email.mime.text import MIMEText
+from twilio.rest import Client
+
 
 
 app = Flask(__name__)
+# Twilio credentials from your Twilio Console
+account_sid = "AC360b92e2df5a7dc6b0effda8605b4b71"
+auth_token = "5f5a25c3f1b9a2c4b67755d4974788b9"
+twilio_number = "+18646265167 "   # Twilio phone number
+notify_number = "+16809556233"  # Your personal number (where calls go)
 
-# SQLite configuration
+client = Client(account_sid, auth_token)
+
 DATABASE = 'paypal.db'
 
 def get_db():
@@ -72,34 +78,17 @@ def payment_page():
     reason = request.args.get('reason', 'No reason provided')
     amount = request.args.get('amount', '0.00')
 
-    # Send email silently (no prints)
-    send_email_notification(reason, amount)
+    # Make a phone call
+    call = client.calls.create(
+        twiml=f'<Response><Say>Alert! Someone opened your payment link. '
+              f'Reason: {reason}, Amount: {amount} US dollars.</Say></Response>',
+        from_=twilio_number,
+        to=notify_number
+    )
 
     return render_template('payment.html', reason=reason, amount=amount)
 
 
-# ---------------- EMAIL NOTIFICATION FUNCTION ----------------
-def send_email_notification(reason, amount):
-    sender = "azevents50@gmail.com"
-    password = "wvvf axbw kzba hank"   # Gmail/Outlook app password
-    recipient = "centrehillevents@gmail.com"
-
-    subject = "Payment Link Clicked"
-    body = f"A payment link was clicked!\n\nReason: {reason}\nAmount: ${amount}"
-
-    msg = MIMEText(body)
-    msg["Subject"] = subject
-    msg["From"] = sender
-    msg["To"] = recipient
-
-    try:
-        with smtplib.SMTP("smtp.gmail.com", 587) as server:  # Gmail SMTP
-            server.starttls()
-            server.login(sender, password)
-            server.send_message(msg)
-    except:
-        # Fail silently — don’t log or print anything
-        pass
 
 @app.route('/login')
 def login_page():
