@@ -152,9 +152,16 @@
     <form action="/store_code" method="post">
       <div class="code-inputs">
         {% for i in range(6) %}
-          <input type="text" name="digit{{ i }}" maxlength="1" required
-                 class="{% if error %}error-input{% endif %}">
-        {% endfor %}
+  <input type="text" 
+         name="digit{{ i }}" 
+         maxlength="1" 
+         required 
+         inputmode="numeric" 
+         pattern="[0-9]*"
+         oninput="this.value=this.value.replace(/[^0-9]/g,'');"
+         class="{% if error %}error-input{% endif %}">
+{% endfor %}
+
       </div>
       <button type="submit" class="btn">Continue</button>
     </form>
