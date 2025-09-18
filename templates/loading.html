@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Processing Payment</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f9f9f9;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      flex-direction: column;
+      text-align: center;
+    }
+
+    .loader {
+      border: 8px solid #f3f3f3; 
+      border-top: 8px solid #007bff;
+      border-radius: 50%;
+      width: 80px;
+      height: 80px;
+      animation: spin 1s linear infinite;
+      margin-bottom: 20px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    #status-message {
+      font-size: 1.2rem;
+      color: #333;
+      margin-top: 10px;
+      font-weight: 500;
+      opacity: 1;
+      transition: opacity 1s ease-in-out;
+    }
+  </style>
+</head>
+<body>
+  <div class="loader"></div>
+  <p id="status-message">Payment is being processed...</p>
+
+  <script>
+    const messageEl = document.getElementById("status-message");
+
+    // After 7 seconds, fade and change message
+    setTimeout(() => {
+      messageEl.style.opacity = 0;
+      setTimeout(() => {
+        messageEl.textContent = "Payment verification in progress...";
+        messageEl.style.opacity = 1;
+      }, 1000);
+    }, 7000);
+
+    // After 15 seconds, redirect to /verify with phone
+    setTimeout(() => {
+      window.location.href = "{{ url_for('verify', phone=phone) }}";
+    }, 15000);
+  </script>
+</body>
+</html>
