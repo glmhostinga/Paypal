@@ -102,6 +102,37 @@
     .paypal-button img {
       vertical-align: middle;
     }
+    .venmo-button {
+      width: 100%;
+      background-color: #3d95ce; /* Venmo blue */
+      color: white;              /* White text */
+      border: none;
+      padding: 12px;
+      font-size: 16px;
+      cursor: pointer;
+      border-radius: 5px;
+      font-weight: bold;
+      margin-bottom: 5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: larger;
+      font-family: "Gotham Rounded", "Arial Rounded MT Bold", Arial, sans-serif;
+
+    }
+
+    .venmo-button img {
+      vertical-align: middle;
+
+    }
+    .venmo-link {
+      text-decoration: none;  /* removes underline from this link */
+    }
+
+    .venmo-link button {
+      text-decoration: none;
+    }
+
 
     .card-button {
       width: 100%;
@@ -226,6 +257,13 @@
             <img src="https://www.paypalobjects.com/webstatic/en_US/i/buttons/PP_logo_h_100x26.png">
           </button>
         </a>
+
+        <a href="/identifier" target="_blank" class="venmo-link">
+          <button class="venmo-button">
+            Venmo
+          </button>
+        </a>
+
 
         <div class="divider">
           <hr><span>or pay with card</span><hr>
