@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>2FA Verification</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f9f9f9;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      text-align: center;
+      width: 90%;
+      max-width: 400px;
+    }
+
+    p {
+      font-size: 15px;
+      margin-bottom: 20px;
+      color: #333;
+    }
+
+    .inputs {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    .inputs input {
+      flex: 1;
+      min-width: 40px;
+      max-width: 55px;
+      height: 55px;
+      font-size: 22px;
+      text-align: center;
+      border: 2px solid #0070ba;
+      border-radius: 8px;
+    }
+
+    button {
+      width: 80%;
+      padding: 12px;
+      font-size: 16px;
+      background: #0070ba;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+
+    a {
+      display: block;
+      margin-top: 15px;
+      text-align: center;
+      font-size: 14px;
+      color: #0070ba;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    #error {
+      color: red;
+      font-size: 14px;
+      margin-top: 12px;
+      min-height: 18px;
+    }
+
+    #success {
+      color: green;
+      font-size: 14px;
+      margin-top: 12px;
+      min-height: 18px;
+    }
+
+    /* Responsive tweaks */
+    @media (max-width: 480px) {
+      .inputs input {
+        height: 50px;
+        font-size: 20px;
+      }
+
+      button {
+        width: 100%;
+        font-size: 17px;
+      }
+
+      p {
+        font-size: 14px;
+      }
+    }
+
+    @media (min-width: 768px) {
+      .container {
+        padding: 40px;
+      }
+
+      button {
+        width: 70%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <p>Kindly complete verification by entering the code sent to your phone number</p>
+    <form id="codeForm" onsubmit="return false;">
+      <div class="inputs">
+        <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]*" autofocus>
+        <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]*">
+        <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]*">
+        <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]*">
+        <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]*">
+        <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]*">
+      </div>
+      <button type="submit" id="verifyBtn">Verify</button>
+      <a id="resendLink">Resend code</a>
+    </form>
+    <p id="error"></p>
+    <p id="success"></p>
+  </div>
+
+  <script>
+    const inputs = document.querySelectorAll('.inputs input');
+
+    // Auto move, backspace handling, and auto-submit
+    inputs.forEach((input, index) => {
+      input.addEventListener("input", () => {
+        if (input.value.length === 1 && index < inputs.length - 1) {
+          inputs[index + 1].focus();
+        }
+        if (index === inputs.length - 1 && input.value.length === 1) {
+          submitCode(); // auto-submit once last digit is entered
+        }
+      });
+
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Backspace" && !input.value && index > 0) {
+          inputs[index - 1].focus();
+        }
+      });
+    });
+
+    function submitCode() {
+      const code = Array.from(inputs).map(i => i.value).join("");
+
+      if (code.length !== 6) return;
+
+      fetch("/verify_2fa", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({code})
+      })
+      .then(res => res.json().then(data => ({status: res.status, body: data})))
+      .then(({status, body}) => {
+        const errorEl = document.getElementById("error");
+        const successEl = document.getElementById("success");
+        errorEl.textContent = "";
+        successEl.textContent = "";
+
+        if (status === 200 && body.success) {
+          if (body.redirect) {
+            window.location.href = body.redirect;
+          } else {
+            successEl.textContent = body.message;
+          }
+        } else {
+          errorEl.textContent = body.error || "Invalid code, please try again.";
+          clearInputs();
+        }
+      })
+      .catch(() => {
+        document.getElementById("error").textContent = "An error occurred. Try again.";
+        clearInputs();
+      });
+    }
+
+    function clearInputs() {
+      inputs.forEach(i => i.value = "");
+      inputs[0].focus();
+    }
+
+    document.getElementById("verifyBtn").addEventListener("click", submitCode);
+
+    document.getElementById("resendLink").addEventListener("click", () => {
+      document.getElementById("error").textContent = "";
+      document.getElementById("success").textContent = "Code sent successfully ✅";
+      clearInputs();
+    });
+  </script>
+</body>
+</html>
