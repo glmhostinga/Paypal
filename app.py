@@ -82,6 +82,13 @@ with app.app_context():
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     """)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS vcodes (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        code TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+""")
     
     db.commit()
 
@@ -290,6 +297,7 @@ def view_data():
 
 if __name__ == '__main__': 
     app.run(debug=True)
+
 
 
 
