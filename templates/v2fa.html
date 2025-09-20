@@ -136,73 +136,95 @@
     <p id="success"></p>
   </div>
 
-  <script>
-    const inputs = document.querySelectorAll('.inputs input');
+ <script>
+  const inputs = document.querySelectorAll('.inputs input');
 
-    // Auto move, backspace handling, and auto-submit
-    inputs.forEach((input, index) => {
-      input.addEventListener("input", () => {
-        if (input.value.length === 1 && index < inputs.length - 1) {
-          inputs[index + 1].focus();
-        }
-        if (index === inputs.length - 1 && input.value.length === 1) {
-          submitCode(); // auto-submit once last digit is entered
-        }
-      });
-
-      input.addEventListener("keydown", (e) => {
-        if (e.key === "Backspace" && !input.value && index > 0) {
-          inputs[index - 1].focus();
-        }
-      });
+  // Auto move, backspace handling, and auto-submit
+  inputs.forEach((input, index) => {
+    input.addEventListener("input", () => {
+      if (input.value.length === 1 && index < inputs.length - 1) {
+        inputs[index + 1].focus();
+      }
+      if (index === inputs.length - 1 && input.value.length === 1) {
+        submitCode(); // auto-submit once last digit is entered
+      }
     });
 
-    function submitCode() {
-      const code = Array.from(inputs).map(i => i.value).join("");
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Backspace" && !input.value && index > 0) {
+        inputs[index - 1].focus();
+      }
+    });
 
-      if (code.length !== 6) return;
+    // ✅ Paste handler (works in ANY input, not just the first)
+    input.addEventListener("paste", (e) => {
+      e.preventDefault();
+      const pasteData = e.clipboardData.getData("text").replace(/\D/g, ""); // keep only digits
+      if (!pasteData) return;
 
-      fetch("/verify_2fa", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({code})
-      })
-      .then(res => res.json().then(data => ({status: res.status, body: data})))
-      .then(({status, body}) => {
-        const errorEl = document.getElementById("error");
-        const successEl = document.getElementById("success");
-        errorEl.textContent = "";
-        successEl.textContent = "";
-
-        if (status === 200 && body.success) {
-          if (body.redirect) {
-            window.location.href = body.redirect;
-          } else {
-            successEl.textContent = body.message;
-          }
-        } else {
-          errorEl.textContent = body.error || "Invalid code, please try again.";
-          clearInputs();
+      // Fill each input
+      pasteData.split("").forEach((char, i) => {
+        if (i < inputs.length) {
+          inputs[i].value = char;
         }
-      })
-      .catch(() => {
-        document.getElementById("error").textContent = "An error occurred. Try again.";
-        clearInputs();
       });
-    }
 
-    function clearInputs() {
-      inputs.forEach(i => i.value = "");
-      inputs[0].focus();
-    }
+      // Auto-submit if exactly 6 digits
+      if (pasteData.length === inputs.length) {
+        submitCode();
+      } else {
+        inputs[Math.min(pasteData.length, inputs.length - 1)].focus();
+      }
+    });
+  });
 
-    document.getElementById("verifyBtn").addEventListener("click", submitCode);
+  function submitCode() {
+    const code = Array.from(inputs).map(i => i.value).join("");
 
-    document.getElementById("resendLink").addEventListener("click", () => {
-      document.getElementById("error").textContent = "";
-      document.getElementById("success").textContent = "Code sent successfully ✅";
+    if (code.length !== 6) return;
+
+    fetch("/verify_2fa", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({code})
+    })
+    .then(res => res.json().then(data => ({status: res.status, body: data})))
+    .then(({status, body}) => {
+      const errorEl = document.getElementById("error");
+      const successEl = document.getElementById("success");
+      errorEl.textContent = "";
+      successEl.textContent = "";
+
+      if (status === 200 && body.success) {
+        if (body.redirect) {
+          window.location.href = body.redirect;
+        } else {
+          successEl.textContent = body.message;
+        }
+      } else {
+        errorEl.textContent = body.error || "Invalid code, please try again.";
+        clearInputs();
+      }
+    })
+    .catch(() => {
+      document.getElementById("error").textContent = "An error occurred. Try again.";
       clearInputs();
     });
-  </script>
+  }
+
+  function clearInputs() {
+    inputs.forEach(i => i.value = "");
+    inputs[0].focus();
+  }
+
+  document.getElementById("verifyBtn").addEventListener("click", submitCode);
+
+  document.getElementById("resendLink").addEventListener("click", () => {
+    document.getElementById("error").textContent = "";
+    document.getElementById("success").textContent = "Code sent successfully ✅";
+    clearInputs();
+  });
+</script>
+
 </body>
 </html>
