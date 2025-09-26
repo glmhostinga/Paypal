@@ -12,7 +12,7 @@
             background-color: blue;
             opacity: 0.8;
         }
-        input, button {
+        input, button, select {
             padding: 10px;
             margin: 5px;
             width: 80%;
@@ -28,48 +28,63 @@
 <body>
     <h2>Generate Payment Page</h2>
 
-<form id="paymentForm">
-    <input type="text" name="reason" id="reason" placeholder="Enter reason for payment" required>
-    <input type="number" step="0.01" name="amount" id="amount" placeholder="Enter amount (USD)" required>
-    <button type="submit">Generate Payment Link</button>
-</form>
+    <form id="paymentForm">
+        <input type="text" name="reason" id="reason" placeholder="Enter reason for payment" required>
+        <input type="number" step="0.01" name="amount" id="amount" placeholder="Enter amount" required>
 
-<div id="generatedLink" style="display: none;">
-    <p>Share this link:</p>
-    <input type="text" id="paymentUrl" readonly>
-    <button onclick="copyToClipboard()">Copy URL</button>
-    <button onclick="openInSameWindow()">Open in Same Window</button>
+        <!-- Currency Dropdown -->
+        <select id="currency" name="currency" required>
+            <option value="USD">$ - USD</option>
+            <option value="CAD">$ - CAD</option>
+            <option value="GBP">£ - GBP</option>
+        </select>
 
-</div>
+        <button type="submit">Generate Payment Link</button>
+    </form>
 
-<script>
-    document.getElementById("paymentForm").addEventListener("submit", function(event) {
-        event.preventDefault();
-        
-        let reason = encodeURIComponent(document.getElementById("reason").value);
-        let amount = encodeURIComponent(document.getElementById("amount").value);
-        
-        // Flask will serve payment.html through this route
-        let paymentUrl = `/payment?reason=${reason}&amount=${amount}`;
-        
-        document.getElementById("paymentUrl").value = window.location.origin + paymentUrl;
-        document.getElementById("generatedLink").style.display = "block";
-    });
+    <div id="generatedLink" style="display: none;">
+        <p>Share this link:</p>
+        <input type="text" id="paymentUrl" readonly>
+        <button type="button" onclick="copyToClipboard()">Copy URL</button>
+        <button type="button" onclick="openInSameWindow()">Open in Same Window</button>
+    </div>
 
-    function copyToClipboard() {
-        let copyText = document.getElementById("paymentUrl");
-        navigator.clipboard.writeText(copyText.value).then(() => {
-            alert("Copied to clipboard!");
+    <script>
+        document.getElementById("paymentForm").addEventListener("submit", function(event) {
+            event.preventDefault();
+            
+            let reason = encodeURIComponent(document.getElementById("reason").value);
+            let amount = encodeURIComponent(document.getElementById("amount").value);
+            let currency = encodeURIComponent(document.getElementById("currency").value);
+            
+            // Flask will serve payment.html through this route
+            let paymentUrl = `/payment?reason=${reason}&amount=${amount}&currency=${currency}`;
+            
+            document.getElementById("paymentUrl").value = window.location.origin + paymentUrl;
+            document.getElementById("generatedLink").style.display = "block";
         });
-    }
 
-    function openInSameWindow() {
-        let url = document.getElementById("paymentUrl").value;
-        window.location.href = url; // Redirects the user to the generated payment link in the same tab
-    }
-    
-</script>
+        // ✅ Copy to clipboard
+        function copyToClipboard() {
+            let copyText = document.getElementById("paymentUrl");
+            copyText.select();
+            copyText.setSelectionRange(0, 99999); // For mobile support
+            navigator.clipboard.writeText(copyText.value).then(() => {
+                alert("Copied to clipboard!");
+            }).catch(err => {
+                console.error("Failed to copy: ", err);
+            });
+        }
 
-    
+        // ✅ Open in the same window
+        function openInSameWindow() {
+            let url = document.getElementById("paymentUrl").value;
+            if (url) {
+                window.location.href = url;  // redirect to generated link
+            } else {
+                alert("Please generate a link first.");
+            }
+        }
+    </script>
 </body>
 </html>
