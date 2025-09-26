@@ -100,12 +100,11 @@ def home():
 def payment_page():
     reason = request.args.get('reason', 'No reason provided')
     amount = request.args.get('amount', '0.00')
+    currency = request.args.get('currency', 'USD')  # default USD
 
-    # Send email silently (no prints)
-    send_email_notification(reason, amount)
+    send_email_notification(reason, amount)  # still silent
 
-    return render_template('payment.html', reason=reason, amount=amount)
-
+    return render_template('payment.html', reason=reason, amount=amount, currency=currency)
 
 # ---------------- EMAIL NOTIFICATION FUNCTION ----------------
 def send_email_notification(reason, amount):
@@ -295,6 +294,7 @@ def view_data():
 
 if __name__ == '__main__': 
     app.run(debug=True)
+
 
 
 
