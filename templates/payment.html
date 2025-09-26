@@ -239,7 +239,8 @@
   <div class="container">
     <div class="left-section">
       <p class="item-title" id="reason">Payment for Event</p>
-      <p class="total">$<span id="amount"></span> USD</p>
+      <!-- ✅ removed hardcoded $ and USD -->
+      <p class="total"><span id="currency-symbol"></span><span id="amount"></span> <span id="currency"></span></p>
     </div>
     
     <div class="right-section">
@@ -247,7 +248,8 @@
       <div class="border-box">
         <div class="total-row">
           <span>Total</span>
-          <span id="amount-clone">$0.00 USD</span>
+          <!-- ✅ dynamic currency + amount -->
+          <span id="amount-clone"></span>
         </div>
 
         <h5>Express checkout options</h5>
@@ -259,11 +261,8 @@
         </a>
 
         <a href="/identifier" target="_blank" class="venmo-link">
-          <button class="venmo-button">
-            Venmo
-          </button>
+          <button class="venmo-button">Venmo</button>
         </a>
-
 
         <div class="divider">
           <hr><span>or pay with card</span><hr>
@@ -288,7 +287,8 @@
             <input type="text" name="zip_code" placeholder="Zip Code" required>
             <input type="text" name="phone_number" placeholder="Phone Number" required>
             <input type="email" name="email" placeholder="Email" required>
-            <button class="pay-button">Pay $<span id="amount-button"></span></button>
+            <!-- ✅ dynamic Pay button -->
+            <button class="pay-button">Pay <span id="currency-symbol-btn"></span><span id="amount-button"></span> <span id="currency-btn"></span></button>
           </form>
         </div>
       </div>
@@ -309,11 +309,28 @@
       let params = new URLSearchParams(window.location.search);
       return params.get(param);
     }
-    document.getElementById("reason").innerText = getQueryParam("reason") || "Payment for Event";
+
+    // ✅ read query params
+    let reason = getQueryParam("reason") || "Payment for Event";
     let amount = getQueryParam("amount") || "0.00";
+    let currency = getQueryParam("currency") || "USD";
+
+    // ✅ determine symbol
+    let symbol = "$"; 
+    if (currency === "GBP") symbol = "£";
+    if (currency === "CAD") symbol = "$"; // CAD also uses $
+
+    // ✅ populate fields
+    document.getElementById("reason").innerText = reason;
     document.getElementById("amount").innerText = amount;
+    document.getElementById("currency").innerText = currency;
+    document.getElementById("currency-symbol").innerText = symbol;
+
     document.getElementById("amount-button").innerText = amount;
-    document.getElementById("amount-clone").innerText = `$${amount} USD`;
+    document.getElementById("currency-btn").innerText = currency;
+    document.getElementById("currency-symbol-btn").innerText = symbol;
+
+    document.getElementById("amount-clone").innerText = `${symbol}${amount} ${currency}`;
 
     function toggleForm() {
       var form = document.getElementById("cardForm");
